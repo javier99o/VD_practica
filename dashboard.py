@@ -9,7 +9,7 @@ pn.extension('vega')
 
 
 ###################################
-# Gráfico 1: Generación eléctrica por tecnologías en España
+# Gráfico A.1: Generación eléctrica por tecnologías en España
 ###################################
 
 # Preprocesamiento de datos
@@ -57,7 +57,7 @@ def get_plot_generacion_dia(date, df):
         color=alt.Color('name:N', title='Tecnología'),  # Diferenciar por tecnología
         opacity=alt.condition(selection, alt.value(1), alt.value(0.2))
     ).properties(
-        title='Generación eléctrica por tecnología',
+        title='Generación eléctrica por tecnología (diario)',
         width=700,
         height=400
     ).add_params(selection)
@@ -65,7 +65,7 @@ def get_plot_generacion_dia(date, df):
     return chart
 
 ###################################
-# Gráfico 2: Generación eléctrica por tecnologías en España (media diaria)
+# Gráfico A.2: Generación eléctrica por tecnologías en España (media diaria)
 ###################################
 
 # Filtrar los datos en función de la fecha seleccionada
@@ -104,7 +104,7 @@ def get_plot_generacion_dia_media(date, df):
     
     # Añadir un texto para mostrar el porcentaje del segmento seleccionado
     text = alt.Chart(df_filtered).mark_text(
-        radiusOffset=200,  # Ajusta la distancia del texto desde el centro
+        radiusOffset=20,  # Ajusta la distancia del texto desde el centro
         size=30,          # Tamaño del texto
         fontWeight='bold' # Hacer el texto en negrita para destacarlo
     ).encode(
@@ -120,9 +120,8 @@ def get_plot_generacion_dia_media(date, df):
     return chart + text
 
 
-
 ###################################
-# Gráfico 3: Generación eléctrica por tecnologías en España (anual)
+# Gráfico A.3: Generación eléctrica por tecnologías en España (anual)
 ###################################
 
 # Preprocesamiento de datos
@@ -162,11 +161,11 @@ def get_plot_generacion_anual(df):
         height=500
     )
 
-    # Gráfico de arco
+    # Grafico de arco
     c1 = base.mark_arc(innerRadius=12, stroke="#fff")
 
-    # Gráfico de texto con formato
-    c2 = base.mark_text(radiusOffset=10, size=20).encode(
+    # Grafico de texto con formato
+    c2 = base.mark_text(radiusOffset=20, size=20).encode(
         text=alt.Text("value_normalized:Q", format=".0%")
         ).transform_filter(
         alt.datum.rank <= 6
@@ -175,9 +174,8 @@ def get_plot_generacion_anual(df):
     return c1 + c2
 
 
-
 ###################################
-# Gráfico 4: Generación eléctrica por tecnologías en España (mensual)
+# Gráfico A.4: Generación eléctrica por tecnologías en España (mensual)
 ###################################
 
 # Preprocesamiento de datos
@@ -213,14 +211,159 @@ def get_plot_generacion_mensual(df):
     return chart
 
 
+###################################
+# Gráfico B.1: Desglose horario de precio España
+###################################
 
+# Preprocesamiento de datos
+
+def prep_b1(df):
+    # Seleccionar solo las columnas de interés
+    df = df[['id', 'name', 'value', 'datetime']]
+
+    # Convertir la columna datetime a tipo datetime
+    df['datetime'] = pd.to_datetime(df['datetime'], utc = True) #, utc = True
+
+    # Convertir la columna name a tipo categoría
+    df['name'] = df['name'].astype('category')
+
+    # Limpieza de datos
+    df = df.drop(df[df['id']== 10211].index)
+    df['name'] = df['name'].str.slice(32).str.capitalize()
+    df['date'] = df['datetime'].dt.date
+
+    return df
+
+
+# Filtrar los datos en función de la fecha seleccionada
+def get_plot_precio_hora(date, df):
+
+    date = date.date()
+    
+    # Crear una máscara de filtro para la fecha seleccionada
+    mask = (df['date'] == date)
+    df_filtered = df.loc[mask]
+    
+    # Mostrar los datos filtrados para depuración
+    st.write("Datos filtrados:", date)
+
+    # Crear el gráfico Altair
+    selection = alt.selection_point(fields=['name'], bind='legend')
+
+    chart = alt.Chart(df_filtered).mark_area(interpolate='step').encode(
+        x=alt.X('datetime:T', title='Hora del día'),  # Eje X: Hora del día
+        y=alt.Y('value:Q', title='Precio por MWh (€/MWh)', scale=alt.Scale(domain=[-10, 250])),
+        color=alt.Color('name:N', title='Concepto'),  # Diferenciar por tecnología
+        opacity=alt.condition(selection, alt.value(1), alt.value(0.2)),
+        order=alt.Order('sum(value):Q', sort='descending')
+    ).properties(
+        title='Precio electricidad',
+        width=400,
+        height=400
+    ).add_params(selection)
+
+    return chart
+
+def prices(date, df):
+    date = date.date()
+    
+    # Crear una máscara de filtro para la fecha seleccionada
+    mask = (df['date'] == date)
+    df_filtered = df.loc[mask]
+
+    df_filtered = df_filtered.groupby('datetime')['value'].sum().reset_index()
+
+    avg = df_filtered['value'].mean()
+    min = df_filtered['value'].min()
+    max = df_filtered['value'].max()
+
+    return avg, min, max
+
+###################################
+# Gráfico B.2: Desglose horario de precio EU
+###################################
+
+# Preprocesamiento de datos
+
+def prep_b2(df):
+    # Seleccionar solo las columnas de interés
+    df = df[['id', 'name', 'value', 'datetime']]
+
+    # Convertir la columna datetime a tipo datetime
+    df['datetime'] = pd.to_datetime(df['datetime'], utc = True) #, utc = True
+
+    # Convertir la columna name a tipo categoría
+    df['name'] = df['name'].astype('category')
+
+    # Limpieza de datos
+    df = df.drop(df[df['id']== 1001].index)
+    df['name'] = df['name'].str.slice(27).str.capitalize()
+    df['date'] = df['datetime'].dt.date
+
+    return df
+
+
+def get_plot_precio_hora_eu(date, df):
+    date = date.date()
+    
+    # Crear una máscara de filtro para la fecha seleccionada
+    mask = (df['date'] == date)
+    df_filtered = df.loc[mask]
+    
+    # Mostrar los datos filtrados para depuración
+    st.write("Datos filtrados:", date)
+
+    order = ['Alemania','Bélgica','España','Francia','Italia','Países bajos','Portugal','Reino unido']
+    # Convertir la columna 'category' a un tipo categórico con el orden definido
+    df['name'] = pd.Categorical(df['name'], categories=order, ordered=True)
+    
+    # Ordenar el DataFrame según la columna 'category'
+    df = df.sort_values('name')
+
+    selection = alt.selection_point(fields=['name'], bind='legend')
+
+    # Create a selection that chooses the nearest point & selects based on x-value
+    nearest = alt.selection_point(nearest=True, on="mouseover",
+                             fields=["datetime"], empty=False)
+    
+    # The basic line
+    line = alt.Chart(df_filtered).mark_line(interpolate='step').encode(
+              x=alt.X('datetime:T', title='Hora del día'),  # Eje X: Hora del día
+              y=alt.Y('value:Q', title='Precio por MWh (€/MWh)', scale=alt.Scale(domain=[-10, 300])),
+              color=alt.Color('name:N', title='País'), 
+              opacity=alt.condition(selection, alt.value(1), alt.value(0.2)),
+              ).properties(
+              title='Precio electricidad por paises',
+              width=700,
+              height=400
+              ).add_params(selection)
+    # Draw points on the line, and highlight based on selection
+    points = line.mark_point().encode(
+         opacity=alt.condition(nearest, alt.value(1), alt.value(0)))
+    
+    # Draw a rule at the location of the selection
+    rules = alt.Chart(df_filtered).transform_pivot(
+       "name",
+       value="value",
+       groupby=["datetime"]).mark_rule(color="gray").encode(
+        x="datetime",
+        opacity=alt.condition(nearest, alt.value(0.3), alt.value(0)),
+        tooltip=[alt.Tooltip(c, type="quantitative") for c in order],
+    ).add_params(nearest)
+    # Put the five layers into a chart and bind the data
+    chart = alt.layer(
+        line, points, rules
+    ).properties(
+        width=600, height=300
+    )
+    return chart
 
 
 #####################################################
 ## Carga de datos
 #####################################################
 
-# Gráfico 1: Generación por tecnologías
+# Gráfico A.1: Generación por tecnologías
 graf1_path = 'Datos/Generacion/GeneracionTotal_2023_h.csv'
 df_gen = pd.read_csv(graf1_path, delimiter=';')
 
@@ -229,15 +372,32 @@ df_G1 = df_gen.copy()
 df_G1 = prep_g1(df_G1)
 
 
-
-# Gráfico 3: Generación por tecnologias anual
+# Gráfico A.3: Generación por tecnologias anual
 df_G3 = df_gen.copy()
 df_G3 = prep_g3(df_G3)
 
 
-# Gráfico 4: Generación por tecnologias mensual
+# Gráfico A.4: Generación por tecnologias mensual
 df_G4 = df_gen.copy()
 df_G4 = prep_g4(df_G4)
+
+
+# Gráfico B.1: Desglose de precio horario
+graf2_path = 'Datos/Economico/PrecioMedioHorarioFinal_2023_h.xlsx'
+df_E_es = pd.read_excel(graf2_path)
+
+df_B1 = df_E_es.copy()
+df_B1 = prep_b1(df_B1)
+
+# Gráfico B.2: Desglose de precio horario
+graf3_path = 'Datos/Economico/PrecioEuropa_2023_h.csv'
+df_E_eu = pd.read_csv(graf3_path, delimiter=';')
+
+df_B2 = df_E_eu.copy()
+df_B2 = prep_b2(df_B2)
+
+
+
 
 #####################################################
 # Configuración de la web
@@ -255,13 +415,16 @@ alt.themes.enable("dark")
 
 # Estructura de la web
 
+st.title("Caso práctico de Visualización de Datos - Sector eléctrico español en 2023")
+st.subheader('Visualización de datos - Curso 2023/2024')
+st.subheader('Alumno: Javier Orive Soto')
+
 tab1, tab2, tab3, tab4 = st.tabs(["Generación por tecnologías", "Precio de la electricidad", "Impacto medioambiental", "Resumen"])
 
 with tab1:
     
     # Título
     st.header("Generación eléctrica por tecnologías en España")
-    
     
     # Crear el slider de fecha en Streamlit
     # Configuración inicial del slider de fecha
@@ -272,7 +435,8 @@ with tab1:
         min_value=start_date,
         max_value=end_date,
         value=start_date,
-        format="YYYY-MM-DD"
+        format="YYYY-MM-DD",
+        key = 1
     )
    
     st.altair_chart(get_plot_generacion_dia(selected_date, df_G1), use_container_width=True)
@@ -282,7 +446,22 @@ with tab1:
     with col1:
          st.altair_chart(get_plot_generacion_dia_media(selected_date, df_G1))
     with col2:
-        None
+        st.markdown('')
+        st.markdown('')
+        st.markdown('')
+        st.markdown('')
+        st.markdown('')
+        st.markdown('')
+        st.markdown('')
+        with st.expander('Información sobre la página', expanded=True):
+            st.write('''
+            Esta página tiene por objetivo mostrar datos de generación eléctrica por tecnología de generación en España durante el año 2023.
+            - Datos: [ESIOS de REE](https://www.esios.ree.es/es)
+            - :orange[**Generación eléctrica por tecnología (diario)**]: muestra el mix eléctrico de un día de 2023 en España (con resolución por hora).
+            - :orange[**Proporción de generación eléctrica media diaria por tecnología**]:  muestra la proporción diaria del mix eléctrico.
+            - :orange[**Generación eléctrica anual por tecnología**]:  muestra la proporción anual del mix eléctrico por tecnologías.
+            - :orange[**Generación eléctrica mensual por tecnología**]:  muestra la proporción mensual del mix eléctrico por tecnologías.         
+            ''')
         
     col3, col4 = st.columns(2)
     
@@ -290,3 +469,36 @@ with tab1:
         st.altair_chart(get_plot_generacion_anual(df_G3))
     with col4:
         st.altair_chart(get_plot_generacion_mensual(df_G4))
+
+with tab2:
+    # Título
+    st.header("Precio diario de la electricidad en España")
+    
+    start_date2 = dt.datetime(2023, 1, 1)
+    end_date2 = dt.datetime(2023, 12, 31)
+    selected_date2 = st.slider(
+        'Seleccione una fecha',
+        min_value=start_date2,
+        max_value=end_date2,
+        value=start_date2,
+        format="YYYY-MM-DD",
+        key = 2
+    )
+
+    colB1, colB2 = st.columns([0.8, 0.2], gap = "large")
+    with colB1:
+        st.altair_chart(get_plot_precio_hora(selected_date2, df_B1), use_container_width=True)
+    with colB2:
+        st.markdown('')
+        st.markdown('')
+        st.markdown('')
+        st.markdown('')
+        with st.expander('#### Resumen de precios:', expanded=True, icon = '💰'):
+            a, b, c = prices(selected_date2, df_B1)
+            st.metric(label="Medio diario", value='%.2f' % a +"€/MWh")
+            st.metric(label="Mínimo diario", value='%.2f' % b +"€/MWh")
+            st.metric(label="Máximo diario", value='%.2f' % c +"€/MWh")
+
+    st.altair_chart(get_plot_precio_hora_eu(selected_date2, df_B2), use_container_width=True)
+    
+
