@@ -359,6 +359,57 @@ def get_plot_precio_hora_eu(date, df):
     return chart
 
 
+###################################
+# Gráfico C.1: Emisiones medias diarias
+###################################
+
+# Preprocesamiento de datos
+
+def prep_c1(df):
+    # Convertir la columna datetime a tipo datetime
+    df['datetime'] = pd.to_datetime(df['datetime'], utc = True) 
+    df['date'] = df['datetime'].dt.date
+    
+    df = pd.melt(df, id_vars=['datetime', 'date'], var_name='name', value_name='value')
+
+    df_emis_avg = df.copy().groupby(['date','name']).agg({'value': 'mean'}).reset_index()
+    df_emis_avg['date'] = pd.to_datetime(df_emis_avg['date'])
+    
+    return df_emis_avg
+
+
+# Filtrar los datos por país
+def get_plot_emisiones_eu(pais, df):
+
+    transf = {"Alemania":"DE",
+              'Bélgica':"BE",
+              'España':"ES",
+              'Francia':"FR",
+              'Italia':"IT",
+              'Países bajos':"NL",
+              'Portugal':"PT",
+              'Reino unido':"UK"}
+
+
+    chart = alt.Chart(df[df['name']== transf[pais]], title="Emisiones medias diarias [gCO2eq/kWh]").mark_rect().encode(
+        alt.X("date(date):O").title("Día").axis(format="%e", labelAngle=0),
+        alt.Y("month(date):O").title("Mes"),
+        alt.Color("value").title('gCO2eq/kWh').scale(
+        domain=[0, 450, 900],
+        range=['green', 'red', 'black']),
+        tooltip=[
+            alt.Tooltip("monthdate(date)", title="Fecha"),
+            alt.Tooltip("value", title="Emisiones [gCO2eq/kWh]")]
+    ).configure_view(
+        step=13,
+        strokeWidth=0
+    ).configure_axis(
+        domain=False)
+    
+    return chart
+
+
+
 #####################################################
 ## Carga de datos
 #####################################################
@@ -395,6 +446,14 @@ df_E_eu = pd.read_csv(graf3_path, delimiter=';')
 
 df_B2 = df_E_eu.copy()
 df_B2 = prep_b2(df_B2)
+
+
+# Gráfico C.1: Desglose de precio horario
+graf4_path = 'Datos/Emisiones/output/CI_bottom_up_method.csv'
+df_emis = pd.read_csv(graf4_path, delimiter=',')
+
+df_emis_avg = prep_c1(df_emis)
+
 
 
 
@@ -501,4 +560,22 @@ with tab2:
 
     st.altair_chart(get_plot_precio_hora_eu(selected_date2, df_B2), use_container_width=True)
     
-
+with tab3:
+    # Título
+    st.header("Emisiones de CO2 producidas para la generación de electricidad en la UE")
+    
+    
+    colC1, colC2 = st.columns([0.15, 0.85], gap = "medium")
+    with colC1:
+    
+        country = st.radio('Seleccione el país:',
+                    ['Alemania','Bélgica','España','Francia','Italia','Países bajos','Portugal','Reino unido'])
+    with colC2:
+        st.altair_chart(get_plot_emisiones_eu(country, df_emis_avg), use_container_width=True)
+    
+    
+with tab4:
+    # Título
+    st.header("Resumen del mercado electrico en España durante 2023")
+    
+    None
