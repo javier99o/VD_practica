@@ -3,9 +3,10 @@ import streamlit as st
 import altair as alt 
 import pandas as pd
 import numpy as np
-import panel as pn
+#import panel as pn
+#pn.extension('vega')
 import datetime as dt
-pn.extension('vega')
+
 
 
 ###################################
@@ -388,10 +389,10 @@ def get_plot_emisiones_eu(pais, df):
               'Italia':"IT",
               'Países bajos':"NL",
               'Portugal':"PT",
-              'Reino unido':"UK"}
+              'Reino unido':"GB"}
 
 
-    chart = alt.Chart(df[df['name']== transf[pais]], title="Emisiones medias diarias [gCO2eq/kWh]").mark_rect().encode(
+    chart = alt.Chart(df[df['name']== transf[pais]], title="Intensidad de carbono media diaria [gCO2eq/kWh]").mark_rect().encode(
         alt.X("date(date):O").title("Día").axis(format="%e", labelAngle=0),
         alt.Y("month(date):O").title("Mes"),
         alt.Color("value").title('gCO2eq/kWh').scale(
@@ -404,7 +405,12 @@ def get_plot_emisiones_eu(pais, df):
         step=13,
         strokeWidth=0
     ).configure_axis(
-        domain=False)
+        domain=False
+    ).properties(
+    width=700,
+    height=300
+    )
+    
     
     return chart
 
@@ -563,7 +569,8 @@ with tab2:
 with tab3:
     # Título
     st.header("Emisiones de CO2 producidas para la generación de electricidad en la UE")
-    
+    st.write("")
+    st.write("")
     
     colC1, colC2 = st.columns([0.15, 0.85], gap = "medium")
     with colC1:
