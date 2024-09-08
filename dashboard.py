@@ -3,8 +3,7 @@ import streamlit as st
 import altair as alt 
 import pandas as pd
 import numpy as np
-#import panel as pn
-#pn.extension('vega')
+from vega_datasets import data
 import datetime as dt
 
 
@@ -415,6 +414,31 @@ def get_plot_emisiones_eu(pais, df):
     return chart
 
 
+###################################
+# Gráfico C.2: Emisiones medias diarias (mapa)
+###################################
+
+def prep_c2(df_emis_avg, df_pot):
+    
+    # Convertir la columna date tipo datetime
+    df_pot['date'] = pd.to_datetime(df_pot['date'])
+    
+    result_df = pd.merge(df_emis_avg, df_pot, on=['date', 'name'], how='inner')
+
+    return result_df
+
+def get_plot_power_emis(df):
+    base = alt.Chart(df)
+    base_bar = base.mark_bar(opacity=0.3, binSpacing=0)
+
+    points = base.mark_circle().encode(
+        alt.X("value").title("Media emisiones diarias [gCO2/kWh]"),
+        alt.Y("power").title("Potencia media diaria [MW]"),
+        color="name",
+    ).properties(width=900, height=600)
+
+    
+    return points
 
 #####################################################
 ## Carga de datos
@@ -460,6 +484,12 @@ df_emis = pd.read_csv(graf4_path, delimiter=',')
 
 df_emis_avg = prep_c1(df_emis)
 
+# Gráfico C.2,3: Desglose de potencias
+df_pot = pd.read_csv('Datos/Emisiones/archive/combined.csv', delimiter=',')
+
+df_emis_pot = prep_c2(df_emis_avg, df_pot)
+
+
 
 
 
@@ -484,7 +514,7 @@ st.title("Caso práctico de Visualización de Datos - Sector eléctrico español
 st.subheader('Visualización de datos - Curso 2023/2024')
 st.subheader('Alumno: Javier Orive Soto')
 
-tab1, tab2, tab3, tab4 = st.tabs(["Generación por tecnologías", "Precio de la electricidad", "Impacto medioambiental", "Resumen"])
+tab1, tab2, tab3= st.tabs(["Generación por tecnologías", "Precio de la electricidad", "Impacto medioambiental"])
 
 with tab1:
     
@@ -506,13 +536,11 @@ with tab1:
    
     st.altair_chart(get_plot_generacion_dia(selected_date, df_G1), use_container_width=True)
     
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([5, 4])
     
     with col1:
          st.altair_chart(get_plot_generacion_dia_media(selected_date, df_G1))
     with col2:
-        st.markdown('')
-        st.markdown('')
         st.markdown('')
         st.markdown('')
         st.markdown('')
@@ -579,10 +607,13 @@ with tab3:
                     ['Alemania','Bélgica','España','Francia','Italia','Países bajos','Portugal','Reino unido'])
     with colC2:
         st.altair_chart(get_plot_emisiones_eu(country, df_emis_avg), use_container_width=True)
+   
+   
+    colC3, colC4 = st.columns([0.75, 0.25], gap = "small")
+    
+    with colC3:
+        st.altair_chart(get_plot_power_emis(df_emis_pot))        
+    with colC4:
+        st.dataframe(df_emis_pot)
     
     
-with tab4:
-    # Título
-    st.header("Resumen del mercado electrico en España durante 2023")
-    
-    None

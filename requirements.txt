@@ -3,4 +3,4 @@ pandas
 numpy
 datetime
 altair
-panel
+vega_datasets
