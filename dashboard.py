@@ -434,7 +434,7 @@ def get_plot_power_emis(df):
 
     points = base.mark_circle().encode(
         alt.X("value").title("Media emisiones diarias [gCO2/kWh]"),
-        alt.Y("power").title("Potencia media diaria [MW]"),
+        alt.Y("power").title("Energía media diaria [MWh]"),
         color="name",
     ).properties(width=900, height=600)
 
