@@ -4,3 +4,4 @@ numpy
 datetime
 altair
 vega_datasets
+openpyxl
